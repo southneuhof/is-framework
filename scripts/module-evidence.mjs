@@ -2,12 +2,24 @@
 // Content-scoped evidence. This records selected inputs, not a dependency analysis.
 import { createHash } from 'node:crypto'
 import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync } from 'node:fs'
-import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
+import { dirname, basename, isAbsolute, relative, resolve, sep } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
 const excludedDirectories = new Set(['.git', 'node_modules', '.turbo', 'playwright-report', 'test-results'])
 const hash = (value) => createHash('sha256').update(value).digest('hex')
+function canonicalAbsolute(path) {
+  const absolute = resolve(path)
+  try { return realpathSync(absolute) } catch (error) { if (error?.code !== 'ENOENT') throw error }
+  const tail = [basename(absolute)]
+  let dir = dirname(absolute)
+  for (;;) {
+    try { return resolve(realpathSync(dir), ...tail) } catch (error) { if (error?.code !== 'ENOENT') throw error }
+    if (dir === dirname(dir)) return absolute
+    tail.unshift(basename(dir))
+    dir = dirname(dir)
+  }
+}
 function within(root, path) {
   const name = relative(root, path)
   if (name === '..' || name.startsWith(`..${sep}`) || isAbsolute(name)) throw new Error(`Input must be within the repository: ${path}`)
@@ -17,7 +29,7 @@ function within(root, path) {
 export function captureInputs({ root = process.cwd(), inputs } = {}) {
   root = realpathSync(root)
   if (!Array.isArray(inputs) || !inputs.length || inputs.some(path => typeof path !== 'string' || !path.trim())) throw new Error('At least one nonempty input path is required.')
-  const selected = [...new Set(inputs.map(path => within(root, resolve(root, path))))].sort()
+  const selected = [...new Set(inputs.map(path => within(root, canonicalAbsolute(resolve(root, path)))) )].sort()
   const entries = {}
   function visit(path) {
     const name = within(root, path)
@@ -77,7 +89,7 @@ export function runCommand(command, args, { cwd = process.cwd(), timeoutMs = 180
 
 function prepareOutput(output) {
   if (!output) throw new Error('An output path is required.')
-  output = resolve(output)
+  output = canonicalAbsolute(resolve(output))
   for (const path of [output, `${output}.stdout.log`, `${output}.stderr.log`]) {
     if (existsSync(path)) throw new Error(`Refusing to overwrite evidence: ${path}`)
   }
@@ -89,7 +101,7 @@ export function recordCommand(command, args, { root = process.cwd(), cwd, inputs
   root = realpathSync(root)
   if (typeof environment !== 'string' || !environment.trim()) throw new Error('An environment identity (without credentials) is required.')
   const before = captureInputs({ root, inputs })
-  const destination = resolve(output ?? '')
+  const destination = canonicalAbsolute(resolve(output ?? ''))
   for (const candidate of [destination, `${destination}.stdout.log`, `${destination}.stderr.log`]) {
     for (const input of before.inputs) {
       const source = resolve(root, input)
@@ -138,7 +150,7 @@ export function execute(argv) {
   }
   if (mode === 'snapshot') {
     const snapshot = captureInputs(options)
-    const output = resolve(options.output ?? '')
+    const output = canonicalAbsolute(resolve(options.output ?? ''))
     for (const input of snapshot.inputs) {
       const source = resolve(snapshot.root, input)
       if (output === source || output.startsWith(`${source}${sep}`)) throw new Error('Snapshot output must not overlap an input path.')
