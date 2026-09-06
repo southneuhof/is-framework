@@ -35,7 +35,7 @@ Before design approval, `worksheet.md` holds only identity, live state, next act
 
 1. Build the applicable field, route, action, permission, seed, and artifact
    evidence matrix in the worksheet.
-2. Reuse a usable design. For intent or a draft, run `$brainstorming` only for
+2. Reuse a usable design. For intent or a draft, run `$grill-with-docs` only for
    unresolved product and architecture decisions.
 3. Write or update `plans/<feature>/design.md` and link it from the worksheet.
    Get written approval for new material decisions. Preserve prior approval for

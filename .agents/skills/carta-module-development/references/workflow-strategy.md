@@ -5,7 +5,7 @@ only through missing stages.
 
 | Current input | Next stage |
 |---|---|
-| Intent | Focused brainstorming, then design |
+| Intent | Focused `$grill-with-docs`, then design |
 | Draft | Preserve settled decisions; resolve only material gaps |
 | Approved design | Implementation planning |
 | Approved plan | Delegated implementation |

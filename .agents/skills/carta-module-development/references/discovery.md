@@ -34,7 +34,7 @@ ownership, actions, permissions, routes and navigation, UI behavior, validation
 and failures, and observable acceptance outcomes. Mark a concern `NOT NEEDED`
 with a reason.
 
-Use `$brainstorming` only for gaps that can change behavior, architecture,
+Use `$grilling` only for gaps that can change behavior, architecture,
 scope, or acceptance. Preserve all compatible settled decisions.
 
 ## Plan gate

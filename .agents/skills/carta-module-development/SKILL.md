@@ -17,7 +17,7 @@ Read [references/workflow-strategy.md](references/workflow-strategy.md) once to
 understand the adaptive stage flow. Then read
 [references/discovery.md](references/discovery.md) and classify the input:
 
-- **Intent:** no stable user journey or contract. Start `$brainstorming`.
+- **Intent:** no stable user journey or contract. Start `$grill-with-docs`.
 - **Draft:** preserve settled decisions and brainstorm only material gaps.
 - **Approved design:** derive the implementation plan.
 - **Approved plan:** delegate implementation.
@@ -45,7 +45,7 @@ existing valid design or plan during escalation.
 ## Shared workflow
 
 1. **Design:** create or update `plans/<feature>/design.md`. Use
-   `$brainstorming` only for unresolved product and architecture decisions.
+   `$grill-with-docs` only for unresolved product and architecture decisions.
    Obtain approval for new material decisions. An approved design does not need
    a second approval.
 2. **Plan:** use `$improve` to create the minimum numbered vertical plans under
