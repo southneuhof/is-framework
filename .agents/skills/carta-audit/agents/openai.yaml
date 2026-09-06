@@ -1,0 +1,4 @@
+interface:
+  display_name: "Carta Audit"
+  short_description: "Audit Carta framework releases"
+  default_prompt: "Use $carta-audit for a routine, release, change-focused, or baseline Carta framework audit of Sprindle plus Loom."
