@@ -1,0 +1,54 @@
+name: Sync Agent Skills
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.agents/skills/**'
+      - '.github/workflows/sync-skills.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: sync-skills-main
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout carta
+        uses: actions/checkout@v4
+        with:
+          path: carta
+          persist-credentials: false
+
+      - name: Checkout skills
+        uses: actions/checkout@v4
+        with:
+          repository: southneuhof/skills
+          path: skills
+          token: ${{ secrets.GH_PACKAGES_TOKEN }}
+
+      - name: Sync skills
+        run: |
+          set -eu
+          rsync -a --delete carta/.agents/skills/ skills/skills/
+
+      - name: Commit and push when changed
+        working-directory: skills
+        run: |
+          set -eu
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "No skill changes to sync."
+            exit 0
+          fi
+          git add -A
+          git commit -m "sync skills from southneuhof/carta@${{ github.sha }}"
+          git push
