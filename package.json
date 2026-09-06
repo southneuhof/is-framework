@@ -20,7 +20,12 @@
     "packages:status": "node scripts/package-repos.mjs status",
     "push:all": "node scripts/package-repos.mjs push-all",
     "skills:add": "sh -c 'npx skills@latest add southneuhof/skills --skill \"$1\"' --",
-    "skills:update": "npx skills update"
+    "skills:update": "npx skills update",
+    "scaffold:bounded-module": "node scripts/scaffold-bounded-module.mjs",
+    "integrate:bounded-module": "node scripts/integrate-bounded-module.mjs",
+    "verify:module": "node scripts/verify-module.mjs",
+    "module:evidence": "node scripts/module-evidence.mjs",
+    "test:module-tooling": "node --test scripts/*.test.mjs"
   },
   "devDependencies": {
     "turbo": "^2.10.12",

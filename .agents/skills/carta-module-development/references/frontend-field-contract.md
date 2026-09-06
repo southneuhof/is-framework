@@ -132,7 +132,7 @@ review.
 Use searches as review aids; read each match in context.
 
 ```sh
-rg -n '\bread\s*:|\.read\b|\bwrite\s*:|\.write\b' apps/web packages/is-vue-framework/src
+rg -n '\bread\s*:|\.read\b|\bwrite\s*:|\.write\b' apps/web packages/loom/src
 rg -n 'assetAdapter\.write|fileUrl\(' apps/web/src/framework apps/web/src/routes
 git diff --name-only -- apps/api
 git diff --check

@@ -15,8 +15,10 @@ When resource route names or navigation change, also run the route-resource
 boundary and manifest specs. Run framework package tests only when approved
 framework code changed.
 
-Do not replace a module-scoped test with the full app suite unless a focused
-failure shows cross-module risk or the user asks for the full suite.
+Select broader checks from affected dependencies and failure evidence. A shared
+resource/API boundary can require consumer checks even when its own tests pass.
+For module work, reuse current evidence and applicability decisions from the
+parent verification strategy; these checks are not a separate repeated gate.
 
 ## Focused Playwright gate
 

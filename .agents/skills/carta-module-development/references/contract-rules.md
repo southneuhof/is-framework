@@ -29,9 +29,10 @@ cross-layer rules. The routed layer skills own their implementation details.
   order, default, and query semantics. Keep `Tabs` for independent surfaces.
 - **Lookup sources:** Use owning resource `list` and `detail` as lookup sources. Do not add consumer-owned options route or ask users to enter IDs. Read [frontend-field-contract.md](frontend-field-contract.md) for the separate lookup-key and resource-identity rule.
 - **Permission matrix:** The approved `design.md` owns the
-  complete permission matrix. It lists exact permission codes, realms, and
-  route/action mappings. Use its entries in `catalog.ts`, route guards,
-  navigation, seed, and tests. Read [permission naming rules](../../api-conventions/references/standard-crud.md) for standard verbs and custom URL actions.
+  complete permission matrix. It establishes access policy, record scope, and action mappings. Existing or
+  approved exact codes remain fixed. When naming new codes is delegated, the
+  plan records one technical binding used by `catalog.ts`, guards, navigation,
+  seed and tests; the planner does not change the access policy. Read [permission naming rules](../../api-conventions/references/standard-crud.md) for standard verbs and custom URL actions.
 - **Navigation:** Sidebar visibility requires an
   `apps/web/src/manifest/navigation.ts` entry with the route name, permission,
   title, and correct group. A route alone does not make a module visible.

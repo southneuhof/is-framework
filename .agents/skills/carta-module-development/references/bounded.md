@@ -1,8 +1,15 @@
-# Bounded generator path
+# Optional bounded generator
 
-Use for one resource with standard CRUD, known fields, permissions, routes,
-navigation, optional seed data, and no relation consumer, workflow, custom
-write, custom surface, risky migration, or open decision.
+Use this only for a new single resource whose approved design includes all five
+standard actions (list, detail, create, update, delete), a generated text UUID
+identity, primitive fields and system-wide permissions. The current generator
+supports that shape, not arbitrary module contracts.
+
+Action subsets, record-scoped/project permissions, relations, owned children,
+workflows, custom writes/surfaces and risky existing-data migrations use normal
+implementation plans. Keep the approved scope; never add actions to fit the
+generator. Generator eligibility is independent of business uncertainty or risk.
+Unknown manifest extensions are rejected rather than silently ignored.
 
 ## Manifest
 
@@ -53,23 +60,35 @@ route and navigation group; the generator does not assign a business group.
 Use `actionFields` when list, detail, create, and update have different field
 sets. Add `seed` only when the design requires stable initial records.
 
-## Pipeline
+## Check and generate
 
-After manifest and plan approval, run:
+Inspect `--help` for the actual helper interface. Validate without writing source:
 
 ```sh
-python3 .agents/skills/carta-module-development/scripts/scaffold_bounded.py --manifest /absolute/path/module.json --json
+python3 .agents/skills/carta-module-development/scripts/scaffold_bounded.py --manifest plans/<feature>/module.json --check --json
 ```
 
-The wrapper runs scaffold, dry integration, applied integration, development
-migration and seed, static verification, and focused verification. It stops on
-the first failure. Its development database writes must be inside the approved
-plan.
+After implementation is authorized, generate and integrate source explicitly:
 
-The generator writes the API entity, model, route test, web schema, resource,
-standard route surfaces, and focused tests. Integration registers the API
-module, Carta permission codes, optional seed, and the selected navigation
-group. `verify:module` checks the generated and integrated result.
+```sh
+python3 .agents/skills/carta-module-development/scripts/scaffold_bounded.py --manifest plans/<feature>/module.json --apply --json
+```
 
-Escalate to the complex path when evidence reveals a relation, child,
-workflow, custom action, custom surface, or new material decision.
+The wrapper checks eligibility and integration anchors before source generation.
+It never runs a database migration, seed, application test or external write.
+It refuses existing generated files. On partial failure, inspect the reported
+changed files rather than blindly restarting or overwriting them.
+
+Review the generated schema and SQL migration, add the contract-specific tests,
+and use the plan's isolated test environment. The generated tests are smoke
+checks, not proof of accepted/denied CRUD, field validation or consumer behavior.
+When optional seed records are present, integration registers the module's seed
+in the current `seedDatabase` owner; the plan still decides which environment
+may execute it.
+
+The root `scaffold:bounded-module`, `integrate:bounded-module` and `verify:module`
+commands expose the individual tools. `verify:module --check-only` performs
+static checks; `--run` runs its listed non-browser commands and stops at the
+first failure. `--reports <unique-directory>` preserves summary and command
+outputs. Read [verification-strategy.md](verification-strategy.md) for status
+scope, additional business tests, evidence freshness and semantic acceptance.

@@ -1,11 +1,18 @@
 ---
 name: web-ui-surfaces
-description: Build or review Carta apps/web routes with the current schema-bound resource API and @southneuhof/loom surfaces. Use for lists, details, forms, dialogs, filters, actions, and layout. Do not use for backend or architecture-only work.
+description: Use when implementing or reviewing Carta apps/web lists, details, forms, dialogs, actions, filters, and route layouts.
 ---
 
 # Web UI surfaces
 
 Use this skill for `apps/web` UI work.
+
+When a parent module design already approves the relevant behavior or framework
+boundary, use that recorded authority. Return only newly exposed material gaps
+to `$carta-module-design`; routine technical implementation needs no new product
+approval. Use the parent plan's proof obligations and the shared
+[verification strategy](../carta-module-development/references/verification-strategy.md)
+for module work rather than adding another verification loop.
 
 ## Discover before edits
 
@@ -32,8 +39,9 @@ Gap: <None, or the exact missing capability>
 ```
 
 When the framework lacks a UI contract capability, record
-`framework-gap: <capability>` and stop before a local substitute or framework
-edit.
+`framework-gap: <capability>`. Use the parent plan’s explicit authority for
+an approved extension; otherwise obtain owner approval before a substitute or
+framework edit.
 
 ## Select the surface
 

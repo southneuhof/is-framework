@@ -1,3 +1,4 @@
+import { copyCurrentOwners } from './test-support/bounded-fixture.mjs'
 import { strict as assert } from 'node:assert'
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -26,7 +27,7 @@ function config() {
     permissions: {
       moduleName: 'Test Catalog',
       realm: 'system',
-      entries: Object.fromEntries(['view', 'list', 'detail', 'create', 'update', 'delete'].map((action) => [action, {
+      entries: Object.fromEntries(['list', 'detail', 'create', 'update', 'delete'].map((action) => [action, {
         name: `${action} test catalog`,
         description: `${action} test catalog records.`,
       }])),
@@ -45,44 +46,13 @@ function writeFixtureFile(root, relativePath, contents) {
 function fixture() {
   const root = mkdtempSync(join(tmpdir(), 'integrate-bounded-module-'))
   temporaryDirectories.push(root)
-  writeFixtureFile(root, 'apps/api/src/routes/index.ts', `import { defineModule } from '@southneuhof/sprindle/model'
-
-export const modules = [
-  defineModule({ models: [] }),
-] as const
-`)
-  writeFixtureFile(root, 'apps/api/src/authorization/catalog.ts', `export const permissionCodes = [
-  'list-roles',
-] as const
-`)
-  writeFixtureFile(root, 'apps/api/scripts/seed.ts', `import { sql } from 'drizzle-orm'
-
-const adminEmail = 'admin@example.com'
-
-async function seedAuthorization() {}
-
-async function seed() {
-  await seedAuthorization()
-}
-`)
-  writeFixtureFile(root, 'apps/web/src/manifest/navigation.ts', `export const navigation = defineNavigation([
-  {
-    name: 'settings',
-    title: 'Master Data',
-    icon: 'folder',
-    routes: [
-      { to: { name: 'settings-roles' }, permission: 'view-number-configs', title: 'Number Configurations', icon: 'folder' },
-      { separator: 'Work Permit' },
-    ],
-  },
-] as const)
-`)
   writeFixtureFile(root, 'apps/web/src/routes/(authenticated)/settings/index.route.vue', `<script setup lang="ts">
 const entries = [
   ['number-configs', 'Number Configurations'],
 ] as const
 </script>
 `)
+  copyCurrentOwners(root)
   return root
 }
 
@@ -122,10 +92,15 @@ test('integrates all owner files, reports paths, and is idempotent', () => {
 test('places an entry after its anchor inside an existing separator', () => {
   const root = fixture()
   const navigationPath = join(root, 'apps/web/src/manifest/navigation.ts')
-  const navigation = readFileSync(navigationPath, 'utf8').replace(
-    "      { to: { name: 'settings-roles' }, permission: 'view-number-configs', title: 'Number Configurations', icon: 'folder' },",
-    "      { separator: 'Test' },\n      { to: { name: 'settings-roles' }, permission: 'view-number-configs', title: 'Number Configurations', icon: 'folder' },",
-  )
+  const navigation = `export const navigation = defineNavigation([
+  {
+    name: 'settings',
+    routes: [
+      { separator: 'Test' },
+      { to: { name: 'settings-roles' }, permission: 'list-roles', title: 'Roles', icon: 'folder' },
+    ],
+  },
+] as const)`
   writeFileSync(navigationPath, navigation)
 
   integrate(config(), { root, apply: true })

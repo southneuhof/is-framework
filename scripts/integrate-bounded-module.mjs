@@ -40,27 +40,56 @@ function insertRouteIndex(source, config) {
   return source
 }
 
+function stringPattern(value) {
+  const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return `(?:${escape(quoted(value))}|${escape(JSON.stringify(value))})`
+}
+
 function insertCatalog(source, config) {
-  const codes = Object.values(moduleMetadata(config).permissions)
-  const block = codes.map((code) => `  ${quoted(code)},`).join('\n')
-  const sectionStart = source.indexOf('export const permissionCodes = [')
-  const sectionEnd = source.indexOf('] as const', sectionStart)
-  if (sectionStart < 0 || sectionEnd < 0) throw new Error('permissionCodes section is missing.')
-  const section = source.slice(sectionStart, sectionEnd)
-  const present = codes.filter((code) => section.includes(quoted(code)))
-  if (present.length === codes.length) return source
-  if (present.length) throw new Error(`permissions for "${config.slug}" are incomplete.`)
-  return insertBeforeArrayEnd(source, 'export const permissionCodes = [', block, 'permissionCodes')
+  const typeMatch = source.match(/export type PermissionCode\s*=([\s\S]*?);/)
+  const startMarker = 'export const permissions = ['
+  let start = source.indexOf(startMarker)
+  let end = source.indexOf('] as const', start)
+  if (!typeMatch || start < 0 || end < 0 || source.indexOf(startMarker, start + 1) >= 0) {
+    throw new Error('Current PermissionCode union and permissions definitions are missing or ambiguous.')
+  }
+  const codes = moduleMetadata(config).permissions
+  const section = source.slice(start, end)
+  const states = Object.entries(codes).map(([action, code]) => {
+    const token = stringPattern(code)
+    const typeCount = [...typeMatch[1].matchAll(new RegExp(`\\|\\s*${token}`, 'g'))].length
+    const callCount = [...section.matchAll(new RegExp(`permission\\(\\s*${token}\\s*,`, 'g'))].length
+    const entry = config.permissions.entries[action]
+    const exact = new RegExp(`permission\\(\\s*${token}\\s*,\\s*${stringPattern(entry.name)}\\s*,\\s*${stringPattern(entry.description)}\\s*\\)`)
+    if (typeCount > 1 || callCount > 1) throw new Error(`permission "${code}" is duplicated.`)
+    if (typeCount !== callCount || (callCount && !exact.test(section))) throw new Error(`permission "${code}" is incomplete or has different metadata.`)
+    return callCount
+  })
+  if (states.every(Boolean)) return source
+  if (states.some(Boolean)) throw new Error(`permissions for "${config.slug}" are incomplete.`)
+  const typeLines = Object.values(codes).map((code) => `  | ${quoted(code)}`).join('\n')
+  source = source.replace(typeMatch[0], `export type PermissionCode =${typeMatch[1].trimEnd()}\n${typeLines};`)
+  const definitions = Object.entries(codes).map(([action, code]) => {
+    const entry = config.permissions.entries[action]
+    return `  permission(${quoted(code)}, ${quoted(entry.name)}, ${quoted(entry.description)}),`
+  }).join('\n')
+  return insertBeforeArrayEnd(source, startMarker, definitions, 'permissions')
 }
 
 function insertSeed(source, config) {
   if (!config.seed) return source
   const importLine = `import { seed${config.symbol} } from '../src/routes/${config.slug}/${config.slug}.seed'`
   const call = `  await seed${config.symbol}()`
+  const owner = 'export async function seedDatabase() {'
+  if (count(source, owner) !== 1) throw new Error('seedDatabase owner is missing or ambiguous.')
   if (count(source, importLine) > 1 || count(source, call) > 1) throw new Error(`seed registration for "${config.slug}" is duplicated.`)
-  if (!source.includes(importLine)) source = replaceOnce(source, 'const adminEmail', `${importLine}\n\nconst adminEmail`, 'seed import')
-  if (!source.includes(call)) source = replaceOnce(source, 'async function seed() {', `async function seed() {\n${call}`, 'seed call')
-  return source
+  if (source.includes(importLine) !== source.includes(call)) throw new Error(`seed registration for "${config.slug}" is incomplete.`)
+  if (source.includes(importLine)) return source
+  source = `${importLine}\n${source}`
+  const start = source.indexOf(owner)
+  const end = source.indexOf('\n}', start)
+  if (end < 0) throw new Error('seedDatabase closing boundary is missing.')
+  return `${source.slice(0, end)}\n${call}${source.slice(end)}`
 }
 
 function insertNavigation(source, config) {
@@ -122,6 +151,7 @@ export function integrate(value, { root = repoRoot, apply = false } = {}) {
 }
 
 function parseArgs(argv) {
+  if (argv.includes('--check') && argv.includes('--apply')) throw new Error('--check and --apply are mutually exclusive.')
   let manifest
   let root
   let apply = false
@@ -143,6 +173,7 @@ function parseArgs(argv) {
 }
 
 export function execute(argv, { root = repoRoot, cwd = process.cwd() } = {}) {
+  if (argv.includes('--help')) return 'Usage: node scripts/integrate-bounded-module.mjs --manifest <file.json> [--check|--apply] [--root <directory>] [--json]\nDefault is read-only check. --apply edits registration owners only; no database writes.'
   const args = parseArgs(argv)
   const manifest = JSON.parse(readFileSync(resolve(cwd, args.manifest), 'utf8'))
   const result = integrate(manifest, { root: args.root ? resolve(cwd, args.root) : root, apply: args.apply })

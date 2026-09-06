@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "evaluationStatus": "NOT_RUN",
+  "cases": [
+    {
+      "id": "discovery-process",
+      "stage": "design",
+      "request": "Design a purchase-request module. Our approval process is not documented in this brief. Start by understanding how our team actually uses it.",
+      "inputs": []
+    },
+    {
+      "id": "conflicting-references",
+      "stage": "design",
+      "request": "Design purchase-request approvals using these two real reference documents. Preserve established decisions, but resolve anything that would change the new behavior.",
+      "inputs": [
+        "fixtures/sources/approval-procedure.md",
+        "fixtures/sources/completed-request.md"
+      ]
+    },
+    {
+      "id": "subsequent-module",
+      "stage": "design",
+      "request": "Add category selection to service requests using our existing category data. The attached owner describes the current subsystem. Establish the contract before planning.",
+      "inputs": [
+        "fixtures/owners/categories.ts"
+      ]
+    },
+    {
+      "id": "approved-plan-handoff",
+      "stage": "plan",
+      "request": "I approve revision r1 as attached. Write the Carta implementation plans; retain improve-style plan structure. Do not implement.",
+      "inputs": [
+        "fixtures/approved/design.md",
+        "fixtures/owners/categories.ts"
+      ]
+    },
+    {
+      "id": "read-only-generator-pressure",
+      "stage": "plan",
+      "request": "Plan this approved read-only catalogue. The bounded generator seems convenient; use it only if it preserves the contract exactly.",
+      "inputs": [
+        "fixtures/approved/design.md",
+        "fixtures/owners/categories.ts"
+      ]
+    },
+    {
+      "id": "resume-implemented-plan",
+      "stage": "resume",
+      "request": "Continue the approved feature from its current worksheet and completed implementation. Do not restart discovery. Verify the implemented scope before working on any remaining plan.",
+      "inputs": [
+        "fixtures/approved/design.md"
+      ],
+      "preparation": "Use the actual artifacts produced by approved-plan-handoff and its implementation run. If those were not run, mark this case NOT_RUN; do not invent a completed worksheet."
+    },
+    {
+      "id": "review-semantic-defects",
+      "stage": "verify",
+      "request": "Review this existing category list implementation against the approved contract. The UI hides navigation from users without list permission. Give a scoped source-review verdict; no runtime is provided for this fixture.",
+      "inputs": [
+        "fixtures/approved/design.md",
+        "fixtures/review/category-route.ts"
+      ]
+    },
+    {
+      "id": "stale-same-path-evidence",
+      "stage": "verify",
+      "request": "Review the implemented plan and its previous successful report. The relevant source may have changed since that report. Reuse only current sufficient evidence.",
+      "inputs": [],
+      "preparation": "Use a real implemented case and real command report; change an input file without renaming it. Preserve the pre-change report. Do not hand-write success evidence."
+    },
+    {
+      "id": "runtime-unavailable",
+      "stage": "verify",
+      "request": "Finish verification of the approved UI feature using the available checks. Identify precisely what remains unverified.",
+      "inputs": [
+        "fixtures/approved/design.md"
+      ],
+      "preparation": "Use the actual implementation run but disable required browser/database capability in the harness. Record which capability is unavailable. Static tests must not be represented as runtime success."
+    },
+    {
+      "id": "material-gap-in-approved-draft",
+      "stage": "plan",
+      "request": "Plan this approved draft for purchasing approvals: managers approve requests and Finance can reject after approval. Retrying an approval must be supported. The draft does not define what happens if approval and rejection happen together. Resolve only what prevents a sound plan.",
+      "inputs": [
+        "fixtures/sources/approval-procedure.md"
+      ]
+    }
+  ]
+}

@@ -1,99 +1,72 @@
 # Module execution worksheet
 
-Use one feature folder as the stable handoff across design, planning,
-delegation, and verification:
+The feature folder is the durable handoff:
 
 ```text
 plans/<feature>/
-├── design.md
-├── worksheet.md
-├── 01-<vertical-result>.md
-└── reports/
+  design.md
+  worksheet.md
+  001-<observable-result>.md
+  reports/
 ```
 
-## Ownership
+## Authority and state
 
-| Information | Owner |
+| Information | One owner |
 |---|---|
-| Product and architecture decisions | `design.md` |
-| Artifact ledger, plan map, dependencies, and feature state | `worksheet.md` |
-| Technical order, owned areas, checks, and stop conditions | Numbered plan |
-| Command and UI output | Named file under `reports/`, linked from the plan |
-| Acceptance status | One matrix in `worksheet.md`, with rows owned by plans |
+| Intended behavior, decisions and approval | `design.md` or the exact approved source it incorporates |
+| Technical order, dependencies, scope and proof obligations | Numbered plans |
+| Artifact ledger, plan index, live state and acceptance/handoff results | `worksheet.md` |
+| Observed command/UI results, snapshots and review verdicts | Named reports |
 
-Do not copy a locked decision into a second authoritative location.
+The design's acceptance IDs are the stable join key. A worksheet row references
+the rule rather than repeating its definition. Its implementation and evidence
+columns are the semantic handoff; no separate undocumented handoff file exists.
+The planner owns proposed checks; actual commands and results live in reports.
 
-## Lifecycle
+Feature states: `INTAKE` → `DESIGN` → `PLAN` → `READY` → `EXECUTE` →
+`VERIFY` → `DONE`. Use `BLOCKED` with the affected stage and exact missing
+prerequisite. Skip already completed stages when resuming valid artifacts.
 
-Use the first applicable state. Resume it when artifacts already exist.
+Plan states: `TODO`, `IN_PROGRESS`, `IMPLEMENTED`, `VERIFIED`, `BLOCKED`,
+`SUPERSEDED`. `IMPLEMENTED` means the executor has completed that plan's work and
+checks. `VERIFIED` means an acceptance review passed for that scope. Neither
+alone implies feature `DONE`. Explicit prerequisite gates can require a reviewed
+plan; otherwise a dependent plan can proceed when the required interface and
+its checks are complete.
 
-`INTAKE` → `DESIGN` → `DECOMPOSE` → `PLAN` → `READY` → `EXECUTE` →
-`VERIFY` → `DONE`
+Acceptance results: `PENDING`, `PASS`, `FAIL`, `BLOCKED`, `NOT_NEEDED`.
+`NOT_NEEDED` needs an applicability reason consistent with approved scope; it
+cannot waive an approved requirement. Every required row has a primary plan
+owner and may name additional integration evidence from other plans.
 
-- `INTAKE`: classify supplied and repository artifacts.
-- `DESIGN`: resolve only missing material decisions and obtain needed approval.
-- `DECOMPOSE`: divide work by observable vertical results and dependencies.
-- `PLAN`: write or refine numbered implementation plans.
-- `READY`: design and active plan meet their gates.
-- `EXECUTE`: delegated or direct implementation is active.
-- `VERIFY`: all executor-owned checks pass; independent review is pending.
-- `DONE`: all acceptance rows have current evidence and review passed when
-  required.
+Feature `DONE` requires all selected plans verified, every required acceptance
+row passing with current evidence, final cross-plan effects checked, and a
+recorded final verdict. A standalone verification skill returns the verdict;
+the workflow owner records it and advances state. Independent review is used
+when available; otherwise explicitly record self-review with identical criteria.
 
-## Feature worksheet template
+## Initialize and maintain
 
-```markdown
-# <Feature> worksheet
+Use [the worksheet template](../assets/worksheet-template.md), or run:
 
-- State: `INTAKE`
-- Feature: `<feature-slug>`
-- Modules: `<related modules>`
-- Grouping reason: `<shared user journey or contract>`
-- Design: `<path or TBD>`
-- Active plan: `None`
-- Next action: `<one exact action>`
-- Read boundary: `<paths>`
-- Write boundary: `<paths or none>`
-- Last result: `None`
-- Last evidence: `None`
-- Blocker: `None`
-
-## Artifact ledger
-
-| Artifact | Approval | Current | Owns | Gaps or conflicts | Classification |
-|---|---|---|---|---|---|
-| `<path/request>` | `<state>` | `<yes/no>` | `<decisions>` | `<result>` | `<intent/draft/design/plan/code>` |
-
-## Contract evidence
-
-| Question | Evidence | Result | Status |
-|---|---|---|---|
-| User journey and actions | `<path:line>` | `<answer>` | TODO |
-| Data and relation ownership | `<path:line>` | `<answer>` | TODO |
-| Permissions | `<path:line>` | `<answer>` | TODO |
-| Routes and navigation | `<path:line>` | `<answer>` | TODO |
-| UI states and validation | `<path:line>` | `<answer>` | TODO |
-| Seed or migration need | `<path:line>` | `<answer>` | TODO |
-| Acceptance outcomes | `<path:line>` | `<answer>` | TODO |
-| Framework gap | `<path:line>` | `<answer>` | TODO |
-
-## Plan map
-
-| Plan | Observable result | Depends on | Status | Evidence |
-|---|---|---|---|---|
-| `01-<result>.md` | `<user result>` | `none` | TODO | — |
-
-## Decisions and blockers
-
-- None.
+```sh
+python3 .agents/skills/carta-module-development/scripts/init_worksheet.py <feature-slug>
 ```
 
-## Update rules
+The initializer never overwrites an existing worksheet. Keep older valid plans,
+numbering and history on resume. If a prior `README.md` is the live execution
+index, designate one owner and turn the other into a pointer. Translate legacy
+states by their evidence, not by renaming `DONE` to a verified result.
 
-Before an action, record one next action and its read and write boundaries.
-After it, record the result and evidence. Use `TODO`, `ACTIVE`, `PASS`,
-`REWORK`, and `BLOCKED` for work. Use `DONE` only after acceptance is complete.
+Update at meaningful stage/slice handoffs, new decisions, failures and completed
+verification, not after every command. Record the next concrete action and its
+boundary. Source edits begin only under implementation authority. A material
+behavior change invalidates the affected approval/evidence, not all prior work.
 
-During intake, design, decomposition, and planning, write only planning
-artifacts. Source edits start at `EXECUTE`. If implementation reveals a new
-material decision, keep valid completed work and return to `DESIGN` or `PLAN`.
+## Review input
+
+The reviewer receives design and revision, relevant plans, the acceptance/handoff
+rows, the in-scope diff (including new/dirty files), evidence paths and declared
+write boundaries. If an artifact is unavailable, identify the missing evidence
+and keep that scope blocked; do not reconstruct decisions from memory.

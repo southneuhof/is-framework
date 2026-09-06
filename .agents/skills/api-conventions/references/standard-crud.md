@@ -132,8 +132,9 @@ when the canonical `list()` contract fits.
   Record the exact code and realm in the module permission matrix, then use it
   in the catalog, route guard, navigation, seed, and tests. Existing legacy
   codes outside this form need an explicit matrix entry.
-- Run `db:generate`; review the new SQL; then run dev `db:migrate` and
-  `db:seed`. Never edit an applied migration.
+- Generate and review migration SQL. Apply migrations or seeds only to the
+  target authorized by the parent plan; use the guarded test commands for
+  isolated tests. Never edit an applied migration.
 
 ## Focused specification
 
@@ -144,5 +145,6 @@ Session cleanup runs when the test pool closes.
 
 Test the module's domain behavior and its authorization boundary. Do not copy
 a broad CRUD matrix when the factories already test the generic wire behavior.
-Run only the module spec with `test:focused -- <spec>` unless a focused failure
-shows a cross-module risk.
+Start with the module spec using `test:focused -- <spec>`. Include dependent
+consumer checks when the changed boundary exposes them; a prior focused failure
+is not required to recognize that impact.

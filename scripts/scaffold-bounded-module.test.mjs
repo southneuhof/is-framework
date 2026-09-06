@@ -45,7 +45,7 @@ function config() {
     permissions: {
       moduleName: 'Test Catalog',
       realm: 'system',
-      entries: Object.fromEntries(['view', 'list', 'detail', 'create', 'update', 'delete'].map((action) => [action, {
+      entries: Object.fromEntries(['list', 'detail', 'create', 'update', 'delete'].map((action) => [action, {
         name: `${action} test catalog`,
         description: `${action} test catalog records.`,
       }])),

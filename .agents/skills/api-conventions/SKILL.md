@@ -1,17 +1,25 @@
 ---
 name: api-conventions
-description: Follow the Carta apps/api backend conventions (Hono + Sprindle + Drizzle). Use when adding, changing, or reviewing anything in apps/api — entities, models, routes, services, permission catalog entries, migrations, seeds, or module tests. Do not use for apps/web UI work or for packages/sprindle changes.
+description: Use when implementing or reviewing Carta apps/api entities, routes, services, permissions, migrations, seeds, or backend tests.
 ---
 
 # API conventions
 
 Conventions for `apps/api`. Use the named exemplar for the selected pattern;
-do not copy an arbitrary module. When older docs or routes disagree with this
-skill and its exemplar, this skill and the exemplar win.
+do not copy an arbitrary module. Use this skill and current framework exports for implementation conventions.
+The approved module contract owns business behavior; surface a material conflict
+instead of overriding that contract with an exemplar.
 
 Framework vocabulary: read `packages/sprindle/docs/reference.md` before naming
 anything new. Human-readable charter:
 `docs/architecture/api-conventions.md`.
+
+When a parent module design already approves the relevant behavior or framework
+boundary, use that recorded authority. Return only newly exposed material gaps
+to `$carta-module-design`; routine technical implementation needs no new product
+approval. Use the parent plan's proof obligations and the shared
+[verification strategy](../carta-module-development/references/verification-strategy.md)
+for module work rather than adding another verification loop.
 
 ## Pick one pattern
 
@@ -150,10 +158,13 @@ gap. A Sprindle change needs explicit owner approval.
    a local copy per entity file; do not unify it (copies differ in nullability).
 10. **Soft delete = nullable `deletedAt`** (+ optional `deletedByUserId`,
    `deletedReason`) through the shared helpers. No boolean `deleted`.
-11. **Migrations**: `db:generate`, review the SQL in `drizzle/`, commit it with
-   the entity change, then `db:migrate` + `db:seed` against dev `.env`.
-   Never edit an applied migration. `test:focused` migrates `.env.test` only
-   and does not make anything visible in the app.
+11. **Migrations**: generate and review SQL in `drizzle/` with the entity
+   change. Never edit an applied migration. Apply it only to the target allowed
+   by the plan; development migration/seed/reset is not implied by testing.
+   `test:focused` uses the explicit guarded `.env.test` target and does not
+   migrate the development app. Configure it from `.env.test.example`; inherited
+   target overrides must match. The preflight validates configuration, not a
+   remote database owner’s permission to write.
 12. **Route ownership is explicit.** Route-specific policy goes on the route
     factory. Never dispatch policy on route kind, method, path, or private
     resource metadata. The only operation dispatch is the typed `create` or
@@ -173,4 +184,5 @@ pnpm --filter @southneuhof/api test:focused -- src/routes/<name>/<name>.routes.s
 Tests hit real Postgres and run serially against one database. Session
 fixtures auto-clean when the pool closes; business-row deletes stay the spec's
 job (FK order first). Run the full suite only when a change crosses modules or
-a focused failure shows cross-module risk.
+dependency analysis or a focused failure exposes wider risk. Reuse current
+evidence from the parent plan rather than repeating a completed gate.

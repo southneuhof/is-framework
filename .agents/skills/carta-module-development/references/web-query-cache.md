@@ -1,7 +1,7 @@
 # Web query cache convention (TanStack via framework)
 
 The web app caches server data through the framework's query runtime
-(`packages/is-vue-framework/src/query/`, TanStack Query under the hood). One
+(`packages/loom/src/query/`, TanStack Query under the hood). One
 client is installed per app by the framework plugin (default `staleTime` 30s).
 Application code never creates clients or authors raw query keys.
 
@@ -37,7 +37,7 @@ the standard list entry.
 
 ```ts
 import { computed } from 'vue'
-import { collectionKey, useLoader } from '@southneuhof/is-vue-framework'
+import { collectionKey, useLoader } from '@southneuhof/loom'
 
 const list = divisions.list()
 const query = { page: 1, limit: 100 }
@@ -54,7 +54,7 @@ loader fetches on mount.
 
 ## Pattern: single record
 
-Follow `apps/web/src/routes/(authenticated)/quality/pts/[ptsId]/detail.route.vue`:
+Use the current owning resource's detail contract (the names below are illustrative):
 
 ```ts
 const detail = pts.detail({ id: ptsId })
@@ -91,7 +91,7 @@ and forth between already-visited selections serves from cache within
 `enabled` gates loaders whose inputs start empty; `loading` is false while
 gated.
 
-Exports from `@southneuhof/is-vue-framework`: `useLoader`, `collectionKey`,
+Exports from `@southneuhof/loom`: `useLoader`, `collectionKey`,
 `recordKey`. `useLoader` accepts `key`, `context`, `load`, optional `enabled`
 and `data`; returns `data`, `loading`, `error`, `refresh`. `error` is a
 normalized `SubmitError` (`message`).

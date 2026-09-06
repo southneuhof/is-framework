@@ -7,6 +7,12 @@ description: Build and sharpen a project's domain model. Use when discussing cod
 
 Actively build and sharpen the project's domain model as you design. This is the *active* discipline: challenging terms, inventing edge-case scenarios, and writing the glossary and decisions down the moment they crystallise. (Merely *reading* `CONTEXT.md` for vocabulary is not this skill: that's a one-line habit any skill can do. This skill is for when you're changing the model, not just consuming it.)
 
+For Carta module work, the design owns business behavior and its approval.
+Use this skill only when a glossary entry or consequential ADR actually needs
+changing. Existing code establishes current behavior, not desired behavior;
+classify a conflict as a proposed change or a contradiction before resolving it.
+Ordinary decisions stay in the module design rather than a second specification.
+
 ## File structure
 
 Most repos have a single context:
@@ -55,7 +61,7 @@ When domain relationships are being discussed, stress-test them with specific sc
 
 ### Cross-reference with code
 
-When the user states how something works, check whether the code agrees. If you find a contradiction, surface it: "Your code cancels entire Orders, but you just said partial cancellation is possible. Which is right?"
+When the user states how something works, check whether the code agrees. If you find a contradiction, surface it: "The current code cancels entire Orders, while your example cancels some lines. Is partial cancellation an intended change, or is another existing flow responsible?"
 
 ### Update CONTEXT.md inline
 

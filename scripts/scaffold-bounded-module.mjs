@@ -23,6 +23,11 @@ function isObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
+function knownKeys(value, allowed, name) {
+  const unknown = Object.keys(value).filter((key) => !allowed.includes(key))
+  if (unknown.length) throw new Error(`${name} contains unsupported keys: ${unknown.join(', ')}. Use a normal module plan for unsupported behavior.`)
+}
+
 function requiredString(value, name) {
   if (typeof value !== 'string' || value.trim() === '') throw new Error(`${name} is required.`)
   return value.trim()
@@ -51,6 +56,7 @@ function validateOptions(field) {
     if (!isObject(option) || !('id' in option) || typeof option.name !== 'string' || option.name.trim() === '') {
       throw new Error(`Field "${field.key}" option ${index + 1} must have id and name.`)
     }
+    knownKeys(option, ['id', 'name'], `Field ${field.key} option`)
     if (field.type === 'boolean' && typeof option.id !== 'boolean') {
       throw new Error(`Field "${field.key}" option ${index + 1} id must be boolean.`)
     }
@@ -65,19 +71,23 @@ function validateOptions(field) {
 
 function validateLabels(value) {
   if (!isObject(value)) throw new Error('labels is required.')
+  knownKeys(value, labelKeys, 'labels')
   const labels = Object.fromEntries(labelKeys.map((key) => [key, requiredString(value[key], `labels.${key}`)]))
   return labels
 }
 
 function validatePermissions(value) {
   if (!isObject(value)) throw new Error('permissions is required.')
+  knownKeys(value, ['moduleName', 'realm', 'entries'], 'permissions')
   const moduleName = requiredString(value.moduleName, 'permissions.moduleName')
   const realm = requiredString(value.realm, 'permissions.realm')
-  if (!new Set(['system', 'project']).has(realm)) throw new Error('permissions.realm must be system or project.')
+  if (realm !== 'system') throw new Error('The bounded generator supports only system permissions; use a normal module plan for scoped access.')
   if (!isObject(value.entries)) throw new Error('permissions.entries is required.')
+  knownKeys(value.entries, permissionActions, 'permissions.entries')
   const entries = Object.fromEntries(permissionActions.map((action) => {
     const entry = value.entries[action]
-    if (!isObject(entry)) throw new Error(`permissions.entries.${action} is required.`)
+    if (!isObject(entry)) throw new Error(`permissions.entries.${action} is required for this full CRUD generator; use a normal module plan for an action subset.`)
+    knownKeys(entry, ['name', 'description'], `permissions.entries.${action}`)
     return [action, {
       name: requiredString(entry.name, `permissions.entries.${action}.name`),
       description: requiredString(entry.description, `permissions.entries.${action}.description`),
@@ -88,6 +98,7 @@ function validatePermissions(value) {
 
 function validateNavigation(value) {
   if (!isObject(value)) throw new Error('navigation is required.')
+  knownKeys(value, ['group', 'after', 'before', 'title', 'icon', 'separator'], 'navigation')
   const group = requiredString(value.group, 'navigation.group')
   if (!slugPattern.test(group)) throw new Error('navigation.group must be a route segment.')
   const hasAfter = value.after !== undefined && value.after !== null
@@ -104,6 +115,7 @@ function validateNavigation(value) {
 function validateSeed(value, { identity, fields }) {
   if (value === undefined || value === null) return null
   if (!isObject(value)) throw new Error('seed must be an object when provided.')
+  knownKeys(value, ['records', 'updateFields'], 'seed')
   if (!Array.isArray(value.records) || value.records.length === 0) throw new Error('seed.records must be a non-empty array when seed is provided.')
   if (!Array.isArray(value.updateFields) || value.updateFields.length === 0) throw new Error('seed.updateFields must be a non-empty array when seed is provided.')
   const allowedKeys = new Set([identity.key, ...fields.map((field) => field.key)])
@@ -125,6 +137,8 @@ function validateSeed(value, { identity, fields }) {
 
 function validateField(value, name, { domain }) {
   if (!isObject(value)) throw new Error(`${name} must be an object.`)
+  knownKeys(value, ['key', 'type', 'column', 'required', 'default', ...(domain ? ['label', 'renderer', 'options'] : [])], name)
+  if (!domain && value.required && !Object.hasOwn(value, 'default')) throw new Error(`${name} requires a default; use a normal module plan for server-computed fields.`)
   const key = identifier(value.key, `${name}.key`)
   const type = requiredString(value.type, `${name}.type`)
   if (!supportedTypes.has(type)) throw new Error(`${name}.type "${type}" is unsupported; use text, boolean, or number.`)
@@ -177,6 +191,7 @@ function validateActionFields(value, fields) {
 
 export function validateConfig(value) {
   if (!isObject(value)) throw new Error('Scaffold configuration must be a JSON object.')
+  knownKeys(value, ['kind', 'slug', 'table', 'symbol', 'title', 'identity', 'fields', 'actionFields', 'serverFields', 'auditFields', 'labels', 'permissions', 'navigation', 'seed'], 'manifest')
 
   if (value.kind !== 'bounded-module') throw new Error('kind must be bounded-module.')
   const slug = requiredString(value.slug, 'slug')
@@ -187,6 +202,7 @@ export function validateConfig(value) {
   const title = requiredString(value.title, 'title')
 
   if (!isObject(value.identity)) throw new Error('identity is required.')
+  knownKeys(value.identity, ['key', 'type', 'column', 'primary', 'generated'], 'identity')
   const identity = {
     ...value.identity,
     key: identifier(value.identity.key, 'identity.key'),
@@ -293,7 +309,7 @@ function renderRoute(config) {
   const metadata = moduleMetadata(config)
   return `import { create, deleteRoute, detail, list, update } from '@southneuhof/sprindle/routes'
 import { defineDomainPart, defineModel } from '@southneuhof/sprindle/model'
-import { requirePermission } from '../../authorization'
+import { requirePermission } from '../../identity'
 import { ${plural}, ${entity} } from './${config.slug}.entity'
 
 const listAccess = [requirePermission('${metadata.permissions.list}')]
@@ -369,7 +385,7 @@ export type ${config.symbol}Create = z.input<typeof ${entity}.schemas.create>
 export type ${config.symbol}Update = z.input<typeof ${entity}.schemas.update>
 `
   if (config.identity.key !== 'id') {
-    return `import { defineSchema, fromZod } from '@southneuhof/is-vue-framework'
+    return `import { defineSchema, fromZod } from '@southneuhof/loom'
 import type { AppResourceContract } from '@/framework/hono'
 ${head}
 export const ${plural}Schema = defineSchema<AppResourceContract<typeof rpc['${config.slug}']>>({
@@ -405,7 +421,7 @@ function renderResource(config) {
     .join(', ')
   const initialData = initial ? `\n      initialData: { ${initial} },` : ''
 
-  return `import { defineFields, defineResource } from '@southneuhof/is-vue-framework'
+  return `import { defineFields, defineResource } from '@southneuhof/loom'
 import { createHonoResourceActions } from '@/framework/hono'
 import { rpc } from '@/framework/rpc'
 import { ${plural}Schema } from './${config.slug}.schema'
@@ -428,7 +444,7 @@ export const ${plural} = defineResource(${plural}Schema, {
     detail: {
       run: api.detail,
       fields: [${fieldKeys('detail')}],
-      permission: '${metadata.permissions.view}',
+      permission: '${metadata.permissions.detail}',
       route: { name: '${metadata.routes.detail}', params: (id) => ({ ${routeParam}: String(id) }) },
       title: ${literal(config.labels.detailTitle)},
     },
@@ -459,7 +475,7 @@ function renderResourceTest(config) {
   const routeParam = metadata.routeParam
   const keys = Object.fromEntries(resourceActions.map((action) => [action, literal(config.actionFields[action])]))
   return `import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { createFrameworkQueryClient, registerResourceRuntime, resetResourceRuntimeForTests, resolveFields, resolveFrameworkAdapters, resolveFrameworkFieldDefaults } from '@southneuhof/is-vue-framework'
+import { createFrameworkQueryClient, registerResourceRuntime, resetResourceRuntimeForTests, resolveFields, resolveFrameworkAdapters, resolveFrameworkFieldDefaults } from '@southneuhof/loom'
 import { appFieldDefaults } from '@/configs/defaults'
 import { ${plural} } from './${config.slug}.resource'
 
@@ -500,14 +516,14 @@ function renderRoutes(config) {
   const submitLabel = html(config.labels.submitLabel)
   return {
     index: `<script setup lang="ts">
-import { ListView } from '@southneuhof/is-vue-framework'
+import { ListView } from '@southneuhof/loom'
 import { ${plural} } from './${config.slug}.resource'
 </script>
 
 <template><ListView v-bind="${plural}.list()" title="${listTitle}" /></template>
 `,
     create: `<script setup lang="ts">
-import { FormView } from '@southneuhof/is-vue-framework'
+import { FormView } from '@southneuhof/loom'
 import { ${plural} } from './${config.slug}.resource'
 </script>
 
@@ -515,7 +531,7 @@ import { ${plural} } from './${config.slug}.resource'
 `,
     detail: `<script setup lang="ts">
 import { useRoute } from 'vue-router'
-import { DetailView } from '@southneuhof/is-vue-framework'
+import { DetailView } from '@southneuhof/loom'
 import { ${plural} } from '../${config.slug}.resource'
 
 const route = useRoute('${metadata.routes.detail}')
@@ -525,7 +541,7 @@ const route = useRoute('${metadata.routes.detail}')
 `,
     edit: `<script setup lang="ts">
 import { useRoute } from 'vue-router'
-import { FormView } from '@southneuhof/is-vue-framework'
+import { FormView } from '@southneuhof/loom'
 import { ${plural} } from '../${config.slug}.resource'
 
 const route = useRoute('${metadata.routes.edit}')
@@ -636,9 +652,12 @@ function parseArgs(argv) {
   let configPath
   let outputRoot
   let json = false
+  let check = false
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index]
-    if (argument === '--json') {
+    if (argument === '--check') {
+      check = true
+    } else if (argument === '--json') {
       json = true
     } else if (argument === '--config') {
       configPath = argv[index + 1]
@@ -652,12 +671,13 @@ function parseArgs(argv) {
       throw new Error(`Unknown argument: ${argument}`)
     }
   }
-  if (!configPath) throw new Error('Usage: node scripts/scaffold-bounded-module.mjs --config <file.json> [--root <directory>] [--json]')
-  return { configPath, outputRoot, json }
+  if (!configPath) throw new Error('Usage: node scripts/scaffold-bounded-module.mjs --config <file.json> [--root <directory>] [--check] [--json]')
+  return { configPath, outputRoot, json, check }
 }
 
 function output(result, json) {
   if (json) return JSON.stringify(result, null, 2)
+  if (result.status === 'VALID') return 'Manifest VALID (no files written)'
   return [
     'Generated files:',
     ...result.generated.map((path) => `- ${path}`),
@@ -677,7 +697,8 @@ function output(result, json) {
 }
 
 export function execute(argv, { root = repoRoot, cwd = process.cwd() } = {}) {
-  const { configPath, outputRoot, json } = parseArgs(argv)
+  if (argv.includes('--help')) return 'Usage: node scripts/scaffold-bounded-module.mjs --config <file.json> [--root <directory>] [--check] [--json]\n--check validates only. Otherwise generates new files without overwriting. No database writes.'
+  const { configPath, outputRoot, json, check } = parseArgs(argv)
   const absoluteConfigPath = resolve(cwd, configPath)
   let config
   try {
@@ -686,6 +707,7 @@ export function execute(argv, { root = repoRoot, cwd = process.cwd() } = {}) {
     const message = error instanceof Error ? error.message : String(error)
     throw new Error(`Cannot read scaffold config ${absoluteConfigPath}: ${message}`)
   }
+  if (check) { validateConfig(config); return output({ status: 'VALID', scope: 'manifest', writes: [] }, json) }
   return output(scaffold(config, { root: outputRoot ? resolve(cwd, outputRoot) : root }), json)
 }
 

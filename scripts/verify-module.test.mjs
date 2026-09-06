@@ -1,3 +1,4 @@
+import { copyCurrentOwners } from './test-support/bounded-fixture.mjs'
 import { strict as assert } from 'node:assert'
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -28,7 +29,7 @@ function config() {
     permissions: {
       moduleName: 'Test Catalog',
       realm: 'system',
-      entries: Object.fromEntries(['view', 'list', 'detail', 'create', 'update', 'delete'].map((action) => [action, {
+      entries: Object.fromEntries(['list', 'detail', 'create', 'update', 'delete'].map((action) => [action, {
         name: `${action} test catalog`,
         description: `${action} test catalog records.`,
       }])),
@@ -45,31 +46,6 @@ function writeFixtureFile(root, relativePath, contents) {
 }
 
 function ownerFiles(root) {
-  writeFixtureFile(root, 'apps/api/src/routes/index.ts', `import { defineModule } from '@southneuhof/sprindle/model'
-export const modules = [
-  defineModule({ models: [] }),
-] as const
-`)
-  writeFixtureFile(root, 'apps/api/src/authorization/catalog.ts', `export const permissionCodes = [
-  'list-roles',
-] as const
-`)
-  writeFixtureFile(root, 'apps/api/scripts/seed.ts', `const adminEmail = 'admin@example.com'
-async function seedAuthorization() {}
-async function seed() {
-  await seedAuthorization()
-}
-`)
-  writeFixtureFile(root, 'apps/web/src/manifest/navigation.ts', `export const navigation = defineNavigation([
-  {
-    name: 'settings',
-    routes: [
-      { to: { name: 'settings-roles' }, permission: 'view-number-configs', title: 'Number Configurations', icon: 'folder' },
-      { separator: 'Work Permit' },
-    ],
-  },
-] as const)
-`)
   writeFixtureFile(root, 'apps/web/src/routes/(authenticated)/settings/index.route.vue', `<script setup lang="ts">
 const entries = [
   ['number-configs', 'Number Configurations'],
@@ -85,6 +61,7 @@ function fixture() {
   writeFileSync(join(root, 'manifest.json'), JSON.stringify(value, null, 2))
   scaffold(value, { root })
   ownerFiles(root)
+  copyCurrentOwners(root)
   integrate(value, { root, apply: true })
   return { root, value }
 }

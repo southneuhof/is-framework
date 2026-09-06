@@ -1,72 +1,37 @@
 #!/usr/bin/env python3
-"""Create feature worksheet from template. Replaces manual copy-paste."""
-
+"""Create a worksheet from its canonical template; preserve existing work."""
 import argparse
-import pathlib
+from pathlib import Path
+import re
 
-TEMPLATE = """# {feature} worksheet
-
-- State: `INTAKE`
-- Feature: `{feature}`
-- Modules: `{modules}`
-- Grouping reason: `{reason}`
-- Folder: `plans/{feature}/`
-- Design: `TBD during INTAKE`
-- Active plan: `None`
-- Next action: `Classify existing artifacts for {feature}`
-- Read boundary: `AGENTS.md, request, plans/{feature}, exact code search hits`
-- Write boundary: `plans/{feature}/worksheet.md`
-- Last result: `None`
-- Last evidence: `None`
-- Blocker: `None`
-
-## Artifact ledger
-
-| Artifact | Approval | Current | Owns | Gaps or conflicts | Classification |
-|---|---|---|---|---|---|
-| `<path/request>` | `<state>` | `<yes/no>` | `<decisions>` | `<result>` | `<intent/draft/design/plan/code>` |
-
-## Contract evidence
-
-| Question | Evidence path and symbol/line | Result | Status |
-|---|---|---|---|
-| User journey and actions | `<path:line>` | `<answer>` | TODO |
-| Data and relation ownership | `<path:line>` | `<answer>` | TODO |
-| Permissions | `<path:line>` | `<answer>` | TODO |
-| Routes and navigation | `<path:line>` | `<answer>` | TODO |
-| UI states and validation | `<path:line>` | `<answer>` | TODO |
-| Seed or migration need | `<path:line>` | `<answer>` | TODO |
-| Acceptance outcomes | `<path:line>` | `<answer>` | TODO |
-| Framework gap | `<path:line>` | `<answer>` | TODO |
-
-## Plan map
-
-| Plan | Observable result | Depends on | Status | Evidence |
-|---|---|---|---|---|
-| `01-<slice>.md` | `<slice>` | `none` | TODO | — |
-
-## Decisions and blockers
-
-- None.
-"""
 
 def main():
-    p = argparse.ArgumentParser(description="Init feature worksheet")
-    p.add_argument("feature", help="feature slug, e.g. support-app-reviews")
-    p.add_argument("--modules", default="", help="comma-separated module list")
-    p.add_argument("--reason", default="single module", help="grouping reason")
-    p.add_argument("--path", default=None, help="override output path")
-    args = p.parse_args()
-
-    out = pathlib.Path(args.path) if args.path else pathlib.Path(f"plans/{args.feature}/worksheet.md")
-    out.parent.mkdir(parents=True, exist_ok=True)
-    if out.exists():
-        print(f"exists: {out} (not overwritten)")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('feature', help='Lowercase, hyphen-separated feature slug')
+    parser.add_argument('--modules', default='', help='Related module names')
+    parser.add_argument('--reason', default='single module', help='Why these modules form one feature')
+    parser.add_argument('--path', type=Path, help='Explicit output path')
+    args = parser.parse_args()
+    if not re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', args.feature):
+        parser.error('feature must be a lowercase, hyphen-separated slug')
+    output = args.path or Path('plans') / args.feature / 'worksheet.md'
+    if output.exists():
+        print(f'exists: {output} (not overwritten)')
         return 0
-    content = TEMPLATE.format(feature=args.feature, modules=args.modules or args.feature, reason=args.reason)
-    out.write_text(content, encoding="utf-8")
-    print(f"created: {out}")
+    template = Path(__file__).resolve().parents[1] / 'assets/worksheet-template.md'
+    text = template.read_text(encoding='utf-8')
+    for key, value in {'FEATURE': args.feature, 'MODULES': args.modules or args.feature, 'REASON': args.reason}.items():
+        text = text.replace('{{' + key + '}}', ' '.join(value.splitlines()))
+    output.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with output.open('x', encoding='utf-8') as file:
+            file.write(text)
+    except FileExistsError:
+        print(f'exists: {output} (not overwritten)')
+        return 0
+    print(f'created: {output}')
     return 0
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     raise SystemExit(main())

@@ -114,7 +114,7 @@ list on the consumer. API list and detail use `list-*` / `detail-*`.
 Resource `permission` stays `view-*` for the admin screen.
 
 If the owner list or detail cannot serve the field, stop. Tell the user
-the missing owner filter or contract. Use the brainstorming skill with the
+the missing owner filter or contract. Use `$carta-module-design` with the
 user before you add or change a route. Do not invent a custom endpoint.
 
 Use a standard list and detail pair for every database-backed form source.
@@ -176,7 +176,7 @@ stay on the owner `list` and `detail`.
 
 A custom write is only for a domain state transition that create, update, or
 delete cannot express. If you think you need one, stop. Ask the user. Use
-the brainstorming skill. Do not invent the route, permission, or payload.
+`$carta-module-design`. Do not invent the route, permission, or payload.
 
 After the user approves a custom write, use it when the operation is a
 state transition, has a distinct permission, accepts a different input

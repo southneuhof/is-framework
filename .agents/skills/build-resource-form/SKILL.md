@@ -1,13 +1,21 @@
 ---
 name: build-resource-form
-description: Configure and repair Carta resource forms in apps/web with schema-bound fields, standard CRUD views, resource-backed standard lists, dependent behavior, custom workflows, and matching apps/api contracts. Use when adding or reviewing a module or resource form, its API routes, field sources, child records, or form tests.
+description: Use when implementing or reviewing Carta resource forms, field sources, dependent inputs, child records, and their API contracts.
 ---
 
 # Build Resource Forms
 
-Use this skill for one Carta resource form and its API contract. Build standard
-create and update forms first. Use the custom workflow section only when the
-screen has domain actions, child records, or several writes.
+Use this skill for a Carta resource form and its API contract. Implement only
+the actions selected by the approved design. Use standard forms for ordinary
+create/update actions; use the workflow section for domain actions, child
+records, or several writes.
+
+When a parent module design already approves the relevant behavior or framework
+boundary, use that recorded authority. Return only newly exposed material gaps
+to `$carta-module-design`; routine technical implementation needs no new product
+approval. Use the parent plan's proof obligations and the shared
+[verification strategy](../carta-module-development/references/verification-strategy.md)
+for module work rather than adding another verification loop.
 
 ## Read the current source first
 
@@ -160,7 +168,7 @@ Read the exact renderer key from the app input registry and a nearby current
 resource.
 
 If the owner list or detail cannot serve the field, stop. Tell the user the
-missing owner filter or contract. Use the brainstorming skill with the user
+missing owner filter or contract. Use `$carta-module-design` for the missing material decision
 before you add or change a route. Do not invent a custom endpoint.
 
 API list and detail use `list-*` / `detail-*`. Resource `permission` stays
@@ -207,7 +215,7 @@ A parent form passes dependency values to a source resource; it does not
 redeclare that resource's filters. Do not create a query schema only because a
 service reads a value.
 
-At minimum, expose and test the actions used by the resource:
+Expose and test only the actions selected by the design and used by the resource:
 
 - list: paginated rows and total;
 - detail: one authorized record;
@@ -230,10 +238,9 @@ Run focused checks for the changed module:
   detail access, and write rules;
 - web type check and focused lint;
 - `git diff --check`; and
-- authenticated browser or T3 preview verification of the changed create, edit,
-  list, detail, and workflow path. If the preview is unavailable after a valid
-  retry, report `UI UNVERIFIED` or `BLOCKED`; automated checks do not replace
-  the browser check and the module must not be reported complete.
+- the parent plan’s focused Playwright obligations for the changed form and
+  its consumers, with persisted outcomes. An unavailable browser environment
+  blocks those obligations; other automated checks do not establish them.
 
 In the browser, confirm that a standard list source sends page, limit, search,
 and dependency values; changing search sends a new server request; returned
@@ -252,11 +259,12 @@ Use standard resource actions for ordinary entity CRUD. Do not add a custom
 endpoint for options, search, or a filtered list. Those stay on the owner
 `list` and `detail`.
 
-A custom write is only for a domain state transition that create, update, or
-delete cannot express. If you think you need one, stop. Ask the user. Use the
-brainstorming skill. Do not invent the route, permission, or payload.
+A custom write is for domain behavior the standard actions cannot express.
+Use the approved contract for its route behavior, access and payload. If that
+behavior is missing, return the specific decision to `$carta-module-design`;
+keep already approved custom actions moving.
 
-After the user approves a custom write:
+For an approved custom write:
 
 - define a separate input schema and endpoint when permission, state, or
   response differs from CRUD;
@@ -280,8 +288,9 @@ permission during submit even when the form source already filtered its rows.
 
 ## Stop conditions
 
-Stop and ask the user when the decision changes the API contract, permission
-model, transaction boundary, required framework surface, or legacy label. Stop
-and use the brainstorming skill when a form seems to need a new endpoint, a
-consumer-owned list, or a lookup route. Otherwise use the UI contract and the
-current framework API.
+Return a newly exposed material change to approved behavior, access policy,
+transaction semantics or write authority to `$carta-module-design`. A missing
+framework capability outside approved scope needs owner approval. Continue
+routine implementation of an already approved boundary and preserve unrelated
+completed work. Record the exact blocked obligation rather than reinterviewing
+the whole module.

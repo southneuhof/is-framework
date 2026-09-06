@@ -1,0 +1,51 @@
+name: Module Tooling Validation
+
+on:
+  pull_request:
+    paths:
+      - '.agents/skills/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'apps/api/package.json'
+      - 'apps/api/scripts/test-target.mjs'
+      - 'apps/api/src/authorization/catalog.ts'
+      - 'apps/api/src/routes/index.ts'
+      - 'apps/api/scripts/seed.ts'
+      - 'apps/web/src/manifest/navigation.ts'
+      - '.github/workflows/module-tooling-validation.yml'
+  push:
+    paths:
+      - '.agents/skills/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'apps/api/package.json'
+      - 'apps/api/scripts/test-target.mjs'
+      - 'apps/api/src/authorization/catalog.ts'
+      - 'apps/api/src/routes/index.ts'
+      - 'apps/api/scripts/seed.ts'
+      - 'apps/web/src/manifest/navigation.ts'
+      - '.github/workflows/module-tooling-validation.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: module-tooling-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Check Python prerequisite
+        run: python3 --version
+      - name: Test module skills and helpers without application dependencies
+        run: node --test scripts/*.test.mjs
